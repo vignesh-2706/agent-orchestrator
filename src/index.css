@@ -4,95 +4,104 @@
 
 @layer base {
   :root {
-    --background: 0 0% 98%;
-    --foreground: 215 25% 15%;
+    /* SAP Fiori / UI5 inspired palette */
+    --background: 0 0% 97%;
+    --foreground: 210 29% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card-foreground: 210 29% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 210 29% 15%;
 
-    --primary: 213 90% 50%;
+    --primary: 210 90% 42%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 215 20% 95%;
-    --secondary-foreground: 215 25% 15%;
+    --secondary: 210 15% 93%;
+    --secondary-foreground: 210 29% 15%;
 
-    --muted: 215 15% 92%;
-    --muted-foreground: 215 15% 50%;
+    --muted: 210 12% 90%;
+    --muted-foreground: 210 10% 46%;
 
-    --accent: 213 90% 95%;
-    --accent-foreground: 213 90% 40%;
+    --accent: 210 80% 94%;
+    --accent-foreground: 210 90% 32%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 215 20% 90%;
-    --input: 215 20% 90%;
-    --ring: 213 90% 50%;
+    --border: 210 18% 87%;
+    --input: 210 18% 87%;
+    --ring: 210 90% 42%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
-    /* Category colors */
-    --monitoring: 142 60% 45%;
-    --monitoring-light: 142 60% 95%;
-    --monitoring-foreground: 142 60% 20%;
+    /* SAP category colors */
+    --monitoring: 152 55% 42%;
+    --monitoring-light: 152 45% 94%;
+    --monitoring-foreground: 152 55% 18%;
 
-    --security: 35 90% 55%;
-    --security-light: 35 90% 95%;
-    --security-foreground: 35 90% 25%;
+    --security: 32 85% 52%;
+    --security-light: 32 80% 94%;
+    --security-foreground: 32 85% 22%;
 
-    --build: 213 90% 50%;
-    --build-light: 213 90% 95%;
-    --build-foreground: 213 90% 25%;
+    --build: 210 90% 42%;
+    --build-light: 210 80% 94%;
+    --build-foreground: 210 90% 22%;
 
-    /* Execution status */
-    --running: 142 60% 45%;
-    --running-light: 142 60% 92%;
-    --waiting: 35 90% 55%;
-    --waiting-light: 35 90% 92%;
-    --completed: 142 60% 45%;
+    /* SAP Execution status */
+    --running: 152 55% 42%;
+    --running-light: 152 45% 92%;
+    --waiting: 32 85% 52%;
+    --waiting-light: 32 80% 92%;
+    --completed: 152 55% 42%;
     --failed: 0 72% 51%;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* SAP specific tokens */
+    --sap-shell: 210 29% 20%;
+    --sap-shell-foreground: 0 0% 100%;
+    --sap-info: 210 90% 42%;
+    --sap-positive: 152 55% 42%;
+    --sap-critical: 32 85% 52%;
+    --sap-negative: 0 72% 51%;
+
+    --sidebar-background: 210 29% 20%;
+    --sidebar-foreground: 210 15% 90%;
+    --sidebar-primary: 210 90% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 25% 28%;
+    --sidebar-accent-foreground: 210 15% 90%;
+    --sidebar-border: 210 20% 30%;
+    --sidebar-ring: 210 90% 50%;
   }
 
   .dark {
-    --background: 215 25% 8%;
+    --background: 210 25% 8%;
     --foreground: 210 20% 92%;
-    --card: 215 25% 11%;
+    --card: 210 25% 11%;
     --card-foreground: 210 20% 92%;
-    --popover: 215 25% 11%;
+    --popover: 210 25% 11%;
     --popover-foreground: 210 20% 92%;
-    --primary: 213 90% 55%;
+    --primary: 210 85% 55%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 215 20% 18%;
+    --secondary: 210 20% 18%;
     --secondary-foreground: 210 20% 92%;
-    --muted: 215 15% 18%;
-    --muted-foreground: 215 15% 60%;
-    --accent: 213 90% 18%;
-    --accent-foreground: 213 90% 75%;
+    --muted: 210 15% 18%;
+    --muted-foreground: 210 15% 60%;
+    --accent: 210 80% 18%;
+    --accent-foreground: 210 80% 75%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 215 20% 20%;
-    --input: 215 20% 20%;
-    --ring: 213 90% 55%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --border: 210 20% 20%;
+    --input: 210 20% 20%;
+    --ring: 210 85% 55%;
+    --sidebar-background: 210 30% 6%;
+    --sidebar-foreground: 210 15% 90%;
+    --sidebar-primary: 210 85% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 210 25% 14%;
+    --sidebar-accent-foreground: 210 15% 90%;
+    --sidebar-border: 210 20% 16%;
+    --sidebar-ring: 210 85% 55%;
   }
 }
 
@@ -103,7 +112,7 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: '72', 'SAP-icons', 'Inter', system-ui, -apple-system, sans-serif;
   }
 }
 
@@ -137,5 +146,8 @@
   }
   .status-failed {
     @apply bg-[hsl(var(--failed))];
+  }
+  .sap-shell {
+    @apply bg-[hsl(var(--sap-shell))] text-[hsl(var(--sap-shell-foreground))];
   }
 }

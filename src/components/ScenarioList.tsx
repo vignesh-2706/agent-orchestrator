@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, Copy, Play, Pencil, Plus } from "lucide-react";
+import { Eye, Play, Plus } from "lucide-react";
 import type { Scenario } from "@/data/catalogueData";
-import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface ScenarioListProps {
   scenarios: Scenario[];
@@ -9,13 +9,20 @@ interface ScenarioListProps {
 }
 
 const ScenarioList = ({ scenarios, onScenarioClick }: ScenarioListProps) => {
+  const navigate = useNavigate();
+
+  const handlePlay = (e: React.MouseEvent, scenario: Scenario) => {
+    e.stopPropagation();
+    navigate("/executions", { state: { autoRun: true, scenarioName: scenario.name, category: scenario.category } });
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 40 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 40 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
-      className="bg-card rounded-xl border shadow-lg overflow-hidden min-w-[380px]"
+      className="bg-card rounded-lg border shadow-sm overflow-hidden min-w-[380px]"
     >
       <div className="px-5 py-3 border-b bg-secondary/50">
         <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
@@ -47,25 +54,11 @@ const ScenarioList = ({ scenarios, onScenarioClick }: ScenarioListProps) => {
                   <Eye className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={(e) => { e.stopPropagation(); toast.success("Copied!"); }}
-                  className="p-1.5 rounded-md hover:bg-secondary transition-colors"
-                  title="Copy"
-                >
-                  <Copy className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); toast.info("Running scenario..."); }}
-                  className="p-1.5 rounded-md hover:bg-secondary transition-colors"
+                  onClick={(e) => handlePlay(e, scenario)}
+                  className="p-1.5 rounded-md hover:bg-primary/10 text-primary transition-colors"
                   title="Play"
                 >
                   <Play className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); }}
-                  className="p-1.5 rounded-md hover:bg-secondary transition-colors"
-                  title="Edit"
-                >
-                  <Pencil className="w-4 h-4" />
                 </button>
               </div>
             </motion.div>
