@@ -3,18 +3,18 @@ import { BookOpen, Zap } from "lucide-react";
 
 const PageNav = () => {
   return (
-    <nav className="border-b bg-card/80 backdrop-blur-sm sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto px-6 flex items-center h-14 gap-8">
-        <span className="text-lg font-bold text-primary tracking-tight">Agentic Workflows</span>
+    <nav className="sap-shell border-b border-[hsl(var(--sap-shell))]/80 sticky top-0 z-50">
+      <div className="max-w-6xl mx-auto px-6 flex items-center h-12 gap-8">
+        <span className="text-sm font-bold tracking-tight text-white/90">Agentic Workflows</span>
         <div className="flex gap-1">
           <NavLink
             to="/"
             end
             className={({ isActive }) =>
-              `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              `flex items-center gap-2 px-4 py-1.5 rounded text-sm font-medium transition-colors ${
                 isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  ? "bg-white/15 text-white"
+                  : "text-white/60 hover:text-white hover:bg-white/10"
               }`
             }
           >
@@ -24,10 +24,10 @@ const PageNav = () => {
           <NavLink
             to="/executions"
             className={({ isActive }) =>
-              `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              `flex items-center gap-2 px-4 py-1.5 rounded text-sm font-medium transition-colors ${
                 isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  ? "bg-white/15 text-white"
+                  : "text-white/60 hover:text-white hover:bg-white/10"
               }`
             }
           >

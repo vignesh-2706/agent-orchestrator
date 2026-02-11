@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Eye, Pause, Play, Send } from "lucide-react";
+import { Eye, Pause, Play } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import {
   runningExecutions,
   archivedExecutions,
@@ -8,6 +9,7 @@ import {
   type Execution,
   type CategoryType,
 } from "@/data/catalogueData";
+import ExecutionFlow from "@/components/ExecutionFlow";
 
 const statusRowClass: Record<string, string> = {
   running: "status-running text-white",
@@ -17,36 +19,27 @@ const statusRowClass: Record<string, string> = {
 };
 
 const AgentExecutions = () => {
+  const location = useLocation();
+  const autoRunState = location.state as { autoRun?: boolean; scenarioName?: string; category?: CategoryType } | null;
+
   const [tab, setTab] = useState<"running" | "archive">("running");
-  const [selectedExecution, setSelectedExecution] = useState<Execution | null>(null);
-  const [chatMessages, setChatMessages] = useState<{ role: "agent" | "user"; text: string }[]>([
-    { role: "agent", text: "Workflow started. Waiting for approval to proceed with the next step." },
-  ]);
-  const [chatInput, setChatInput] = useState("");
+  const [selectedExecution, setSelectedExecution] = useState<Execution | null>(
+    autoRunState?.autoRun ? { id: "auto", name: autoRunState.scenarioName || "Workflow", category: autoRunState.category || "monitoring", status: "running", startTime: new Date().toLocaleTimeString() } : null
+  );
 
   const executions = tab === "running" ? runningExecutions : archivedExecutions;
-
-  const handleSend = useCallback(() => {
-    if (!chatInput.trim()) return;
-    setChatMessages((prev) => [
-      ...prev,
-      { role: "user", text: chatInput },
-      { role: "agent", text: "Processing your input... Continuing workflow." },
-    ]);
-    setChatInput("");
-  }, [chatInput]);
 
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto px-6 py-8">
         <h1 className="text-2xl font-bold text-foreground mb-8">Agent Executions</h1>
 
-        <div className={`flex gap-6 transition-all duration-300 ${selectedExecution ? "" : ""}`}>
+        <div className="flex gap-6">
           {/* Left: execution list */}
           <motion.div
             layout
-            className={`bg-card border rounded-2xl shadow-sm overflow-hidden transition-all duration-300 ${
-              selectedExecution ? "w-[360px] flex-shrink-0" : "w-full"
+            className={`bg-card border rounded-lg shadow-sm overflow-hidden transition-all duration-300 ${
+              selectedExecution ? "w-[340px] flex-shrink-0" : "w-full"
             }`}
           >
             {/* Tabs */}
@@ -87,14 +80,13 @@ const AgentExecutions = () => {
                   />
                 ))}
               </AnimatePresence>
-              {/* Empty rows for visual consistency */}
               {Array.from({ length: Math.max(0, 5 - executions.length) }).map((_, i) => (
                 <div key={`empty-${i}`} className="h-16" />
               ))}
             </div>
           </motion.div>
 
-          {/* Right: agent detail panel */}
+          {/* Right: execution flow panel */}
           <AnimatePresence>
             {selectedExecution && (
               <motion.div
@@ -102,68 +94,12 @@ const AgentExecutions = () => {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 40 }}
                 transition={{ duration: 0.35 }}
-                className="flex-1 bg-card border rounded-2xl shadow-sm p-6 flex flex-col"
+                className="flex-1 bg-card border rounded-lg shadow-sm p-5 flex flex-col min-h-[600px]"
               >
-                <h3 className="text-lg font-semibold mb-4 text-center">
-                  {selectedExecution.name} Agent
-                </h3>
-
-                {/* Mini agent flow */}
-                <div className="flex flex-col items-center mb-6">
-                  <div className="border rounded-xl px-6 py-3 bg-accent/50 font-medium text-sm">
-                    Agentic AI Model
-                  </div>
-                  <div className="w-px h-5 bg-border" />
-                  <div className="flex gap-4">
-                    {["Tool", "Memory", "Model"].map((label) => (
-                      <div
-                        key={label}
-                        className="border rounded-lg px-4 py-2 text-xs font-medium text-muted-foreground bg-card"
-                      >
-                        {label}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Chat section */}
-                <div className="flex-1 flex flex-col border rounded-xl overflow-hidden">
-                  <div className="flex-1 p-4 space-y-3 overflow-y-auto max-h-[280px] bg-secondary/30">
-                    {chatMessages.map((msg, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className={`text-sm px-3 py-2 rounded-lg max-w-[85%] ${
-                          msg.role === "agent"
-                            ? "bg-accent text-accent-foreground"
-                            : "bg-primary text-primary-foreground ml-auto"
-                        }`}
-                      >
-                        <span className="font-medium text-xs block mb-0.5 opacity-70">
-                          {msg.role === "agent" ? "Q:" : "Response:"}
-                        </span>
-                        {msg.text}
-                      </motion.div>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center gap-2 p-3 border-t bg-card">
-                    <input
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                      placeholder="Type your response..."
-                      className="flex-1 bg-secondary/50 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 ring-primary/30 transition-shadow"
-                    />
-                    <button
-                      onClick={handleSend}
-                      className="p-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
-                    >
-                      <Send className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
+                <ExecutionFlow
+                  autoRun={autoRunState?.autoRun}
+                  scenarioName={selectedExecution.name}
+                />
               </motion.div>
             )}
           </AnimatePresence>
@@ -213,9 +149,9 @@ const ExecutionRow = ({ execution, index, isSelected, isArchive, onClick }: Exec
         </p>
       </div>
 
-      {isArchive ? (
+      {isArchive && (
         <span className="text-xs font-medium opacity-80 capitalize">{execution.status}</span>
-      ) : null}
+      )}
 
       <div className="flex items-center gap-1">
         <button className="p-1 rounded hover:bg-white/20 transition-colors" onClick={(e) => e.stopPropagation()}>
