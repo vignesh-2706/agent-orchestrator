@@ -20,7 +20,7 @@ const statusRowClass: Record<string, string> = {
 
 const AgentExecutions = () => {
   const location = useLocation();
-  const autoRunState = location.state as { autoRun?: boolean; scenarioName?: string; category?: CategoryType } | null;
+  const autoRunState = location.state as { autoRun?: boolean; scenarioName?: string; category?: CategoryType; prompt?: string } | null;
 
   const [tab, setTab] = useState<"running" | "archive">("running");
   const [selectedExecution, setSelectedExecution] = useState<Execution | null>(
@@ -99,6 +99,7 @@ const AgentExecutions = () => {
                 <ExecutionFlow
                   autoRun={autoRunState?.autoRun}
                   scenarioName={selectedExecution.name}
+                  prompt={autoRunState?.prompt}
                 />
               </motion.div>
             )}

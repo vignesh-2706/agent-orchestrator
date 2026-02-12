@@ -1,75 +1,90 @@
-import { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, Circle, Loader2, ArrowDown, Send, User, Bot, AlertTriangle } from "lucide-react";
-import { agenticFlowSteps, type FlowStep } from "@/data/catalogueData";
-
-type StepStatus = "pending" | "waiting_input" | "running" | "completed" | "failed";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { motion } from "framer-motion";
+import { Send, User, Bot, Loader2 } from "lucide-react";
+import { agenticFlowSteps } from "@/data/catalogueData";
 
 interface ExecutionFlowProps {
   autoRun?: boolean;
   scenarioName?: string;
+  prompt?: string;
 }
 
-const STEP_DURATION = 10000; // 10 seconds per step
+const STEP_DURATION = 10000;
 
-const ExecutionFlow = ({ autoRun, scenarioName }: ExecutionFlowProps) => {
-  const [stepStatuses, setStepStatuses] = useState<StepStatus[]>(
-    agenticFlowSteps.map(() => "pending")
-  );
+const ExecutionFlow = ({ autoRun, scenarioName, prompt }: ExecutionFlowProps) => {
   const [currentStep, setCurrentStep] = useState(-1);
-  const [waitingForInput, setWaitingForInput] = useState(true);
-  const [chatMessages, setChatMessages] = useState<{ role: "agent" | "user"; text: string }[]>([
-    { role: "agent", text: "Workflow ready. Please type 'trigger' to start execution." },
-  ]);
-  const [chatInput, setChatInput] = useState("");
+  const [waitingForInput, setWaitingForInput] = useState(!autoRun);
   const [isStarted, setIsStarted] = useState(false);
+  const [chatMessages, setChatMessages] = useState<{ role: "agent" | "user"; text: string; loading?: boolean }[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Run step with timer
+  // Initialize with prompt if provided
+  useEffect(() => {
+    const initial: { role: "agent" | "user"; text: string }[] = [];
+    if (prompt) {
+      initial.push({ role: "user", text: prompt });
+      initial.push({ role: "agent", text: "Workflow received. Type 'trigger' to start execution." });
+    } else {
+      initial.push({ role: "agent", text: "Workflow ready. Please type 'trigger' to start execution." });
+    }
+    setChatMessages(initial);
+  }, [prompt]);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
+
+  // Run steps as chat messages
   useEffect(() => {
     if (currentStep < 0 || currentStep >= agenticFlowSteps.length) return;
-    if (stepStatuses[currentStep] !== "running") return;
+    if (waitingForInput) return;
+
+    const step = agenticFlowSteps[currentStep];
+
+    // Show "running" message
+    setChatMessages((prev) => [
+      ...prev,
+      { role: "agent", text: `⏳ Running: ${step.title}...`, loading: true },
+    ]);
 
     const timer = setTimeout(() => {
-      // Step 3 (Remediation, index 3) triggers human-in-the-loop
+      // Remove loading message, add completed
+      setChatMessages((prev) => {
+        const filtered = prev.filter((m) => !m.loading);
+
+        // Step 3 (Remediation, index 3) → human-in-the-loop
+        if (currentStep === 3) {
+          return [
+            ...filtered,
+            { role: "agent", text: `⚠️ Step "${step.title}" requires your approval before proceeding.\nPlease type 'approve' to continue.` },
+          ];
+        }
+
+        return [
+          ...filtered,
+          { role: "agent", text: `✅ ${step.title} — completed successfully.` },
+        ];
+      });
+
       if (currentStep === 3) {
-        setStepStatuses((prev) => {
-          const next = [...prev];
-          next[currentStep] = "waiting_input";
-          return next;
-        });
         setWaitingForInput(true);
-        setChatMessages((prev) => [
-          ...prev,
-          { role: "agent", text: `Step "${agenticFlowSteps[currentStep].title}" requires approval. Please confirm to proceed (type 'approve').` },
-        ]);
         return;
       }
 
-      // Complete current step and move to next
-      setStepStatuses((prev) => {
-        const next = [...prev];
-        next[currentStep] = "completed";
-        return next;
-      });
-      setChatMessages((prev) => [
-        ...prev,
-        { role: "agent", text: `✓ Step "${agenticFlowSteps[currentStep].title}" completed successfully.` },
-      ]);
-
+      // Move to next step
       if (currentStep + 1 < agenticFlowSteps.length) {
-        setTimeout(() => {
-          setCurrentStep(currentStep + 1);
-          setStepStatuses((prev) => {
-            const next = [...prev];
-            next[currentStep + 1] = "running";
-            return next;
-          });
-        }, 500);
+        setTimeout(() => setCurrentStep((s) => s + 1), 600);
+      } else {
+        setChatMessages((prev) => [
+          ...prev,
+          { role: "agent", text: "🎉 All steps completed. Workflow execution finished successfully." },
+        ]);
       }
     }, STEP_DURATION);
 
     return () => clearTimeout(timer);
-  }, [currentStep, stepStatuses]);
+  }, [currentStep, waitingForInput]);
 
   const handleSend = useCallback(() => {
     if (!chatInput.trim()) return;
@@ -81,39 +96,26 @@ const ExecutionFlow = ({ autoRun, scenarioName }: ExecutionFlowProps) => {
       setIsStarted(true);
       setWaitingForInput(false);
       setCurrentStep(0);
-      setStepStatuses((prev) => {
-        const next = [...prev];
-        next[0] = "running";
-        return next;
-      });
       setChatMessages((prev) => [
         ...prev,
-        { role: "agent", text: "Execution started. Running Step 1..." },
+        { role: "agent", text: "✔ Trigger received. Starting execution..." },
       ]);
       return;
     }
 
     if (waitingForInput && input === "approve" && currentStep >= 0) {
       setWaitingForInput(false);
-      setStepStatuses((prev) => {
-        const next = [...prev];
-        next[currentStep] = "completed";
-        return next;
-      });
       setChatMessages((prev) => [
         ...prev,
-        { role: "agent", text: `✓ Approved. Step "${agenticFlowSteps[currentStep].title}" completed. Moving to next step...` },
+        { role: "agent", text: `✅ ${agenticFlowSteps[currentStep].title} — approved and completed.` },
       ]);
-
       if (currentStep + 1 < agenticFlowSteps.length) {
-        setTimeout(() => {
-          setCurrentStep(currentStep + 1);
-          setStepStatuses((prev) => {
-            const next = [...prev];
-            next[currentStep + 1] = "running";
-            return next;
-          });
-        }, 500);
+        setTimeout(() => setCurrentStep((s) => s + 1), 600);
+      } else {
+        setChatMessages((prev) => [
+          ...prev,
+          { role: "agent", text: "🎉 All steps completed. Workflow execution finished successfully." },
+        ]);
       }
       return;
     }
@@ -124,117 +126,46 @@ const ExecutionFlow = ({ autoRun, scenarioName }: ExecutionFlowProps) => {
     ]);
   }, [chatInput, isStarted, waitingForInput, currentStep]);
 
-  const getStepIcon = (status: StepStatus) => {
-    switch (status) {
-      case "completed":
-        return <CheckCircle2 className="w-5 h-5 text-[hsl(var(--sap-positive))]" />;
-      case "running":
-        return <Loader2 className="w-5 h-5 text-primary animate-spin" />;
-      case "waiting_input":
-        return <AlertTriangle className="w-5 h-5 text-[hsl(var(--sap-critical))]" />;
-      case "failed":
-        return <Circle className="w-5 h-5 text-destructive" />;
-      default:
-        return <Circle className="w-5 h-5 text-muted-foreground/30" />;
-    }
-  };
-
-  const getStepBorder = (status: StepStatus) => {
-    switch (status) {
-      case "completed":
-        return "border-[hsl(var(--sap-positive))]/50 bg-[hsl(var(--sap-positive))]/5";
-      case "running":
-        return "border-primary/50 bg-primary/5 shadow-md";
-      case "waiting_input":
-        return "border-[hsl(var(--sap-critical))]/50 bg-[hsl(var(--sap-critical))]/5";
-      default:
-        return "border-border";
-    }
-  };
-
   return (
     <div className="flex flex-col h-full">
-      <h3 className="text-base font-semibold mb-4 text-center">
+      <h3 className="text-base font-semibold mb-3 text-center">
         {scenarioName ? `${scenarioName} – Execution` : "Execution Flow"}
       </h3>
 
-      {/* Flow steps */}
-      <div className="flex flex-col items-center gap-1 mb-4 overflow-y-auto flex-1 pr-1">
-        {agenticFlowSteps.map((step, i) => (
-          <div key={step.id} className="w-full flex flex-col items-center">
-            <motion.div
-              animate={{
-                scale: stepStatuses[i] === "running" ? 1.02 : 1,
-              }}
-              transition={{ duration: 0.3 }}
-              className={`w-full border rounded-lg p-3 transition-all duration-500 ${getStepBorder(stepStatuses[i])}`}
-            >
-              <div className="flex items-center gap-3">
-                <div className="flex-shrink-0">{getStepIcon(stepStatuses[i])}</div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm text-foreground">{step.title}</p>
-                  <p className="text-xs text-muted-foreground truncate">{step.description}</p>
-                </div>
-                {stepStatuses[i] === "running" && (
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: "100%" }}
-                    transition={{ duration: STEP_DURATION / 1000, ease: "linear" }}
-                    className="absolute bottom-0 left-0 h-0.5 bg-primary rounded-full"
-                  />
-                )}
-              </div>
-              {/* Progress bar for running step */}
-              {stepStatuses[i] === "running" && (
-                <div className="mt-2 w-full bg-muted rounded-full h-1 overflow-hidden">
-                  <motion.div
-                    initial={{ width: "0%" }}
-                    animate={{ width: "100%" }}
-                    transition={{ duration: STEP_DURATION / 1000, ease: "linear" }}
-                    className="h-full bg-primary rounded-full"
-                  />
-                </div>
-              )}
-            </motion.div>
-            {i < agenticFlowSteps.length - 1 && (
-              <ArrowDown className={`w-3 h-3 my-0.5 ${stepStatuses[i] === "completed" ? "text-[hsl(var(--sap-positive))]" : "text-muted-foreground/30"}`} />
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Chat section */}
-      <div className="flex flex-col border rounded-lg overflow-hidden mt-auto">
-        <div className="flex-1 p-3 space-y-2 overflow-y-auto max-h-[200px] bg-secondary/20">
+      {/* Chat-only interface */}
+      <div className="flex flex-col flex-1 border rounded-lg overflow-hidden">
+        <div className="flex-1 p-4 space-y-3 overflow-y-auto bg-secondary/10">
           {chatMessages.map((msg, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`flex items-start gap-2 text-sm ${msg.role === "user" ? "flex-row-reverse" : ""}`}
+              className={`flex items-start gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
             >
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
                 msg.role === "agent" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
               }`}>
-                {msg.role === "agent" ? <Bot className="w-3 h-3" /> : <User className="w-3 h-3" />}
+                {msg.role === "agent" ? <Bot className="w-3.5 h-3.5" /> : <User className="w-3.5 h-3.5" />}
               </div>
-              <div className={`px-3 py-1.5 rounded-lg max-w-[80%] ${
+              <div className={`px-3 py-2 rounded-lg max-w-[80%] text-sm whitespace-pre-line ${
                 msg.role === "agent"
                   ? "bg-accent text-accent-foreground"
                   : "bg-primary text-primary-foreground"
               }`}>
-                {msg.text}
+                <span>{msg.text}</span>
+                {msg.loading && <Loader2 className="inline-block w-3 h-3 ml-1.5 animate-spin" />}
               </div>
             </motion.div>
           ))}
+          <div ref={chatEndRef} />
         </div>
 
-        <div className="flex items-center gap-2 p-2 border-t bg-card">
+        <div className="flex items-center gap-2 p-3 border-t bg-card">
           <input
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            placeholder={!isStarted ? "Type 'trigger' to start..." : "Type your response..."}
+            placeholder={!isStarted ? "Type 'trigger' to start..." : waitingForInput ? "Type 'approve' to continue..." : "Type a message..."}
             className="flex-1 bg-secondary/50 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 ring-primary/30 transition-shadow"
           />
           <button
