@@ -1,8 +1,10 @@
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Eye, Play, ArrowDown, CheckCircle2, Circle } from "lucide-react";
+import { Play, Send, Bot, User } from "lucide-react";
 import type { Scenario, CategoryType } from "@/data/catalogueData";
-import { categoryLabel, defaultPlaybook, agenticFlowSteps } from "@/data/catalogueData";
+import { categoryLabel, agenticFlowSteps } from "@/data/catalogueData";
 import { useNavigate } from "react-router-dom";
+import { defaultPlaybook } from "@/data/catalogueData";
 
 interface AgenticOverviewProps {
   scenario: Scenario;
@@ -14,11 +16,43 @@ const badgeClass: Record<CategoryType, string> = {
   build: "category-build",
 };
 
+const buildPrompt = (scenario: Scenario) => {
+  const steps = agenticFlowSteps.map((s, i) => `${i + 1}. ${s.title} – ${s.description}`).join("\n");
+  return `Run the "${scenario.name}" workflow:\n\n${steps}\n\nPlease execute these steps sequentially, pausing at Remediation for my approval.`;
+};
+
 const AgenticOverview = ({ scenario }: AgenticOverviewProps) => {
   const navigate = useNavigate();
+  const prompt = buildPrompt(scenario);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  const [messages, setMessages] = useState<{ role: "agent" | "user"; text: string }[]>([
+    { role: "agent", text: `Workflow "${scenario.name}" is ready. Click Play or type a command to begin execution.` },
+    { role: "user", text: prompt },
+  ]);
+  const [chatInput, setChatInput] = useState("");
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const handlePlay = () => {
-    navigate("/executions", { state: { autoRun: true, scenarioName: scenario.name, category: scenario.category } });
+    navigate("/executions", {
+      state: { autoRun: true, scenarioName: scenario.name, category: scenario.category, prompt },
+    });
+  };
+
+  const handleSend = () => {
+    if (!chatInput.trim()) return;
+    setMessages((prev) => [...prev, { role: "user", text: chatInput }]);
+    setChatInput("");
+    // If user types something other than play-related, just echo
+    setTimeout(() => {
+      setMessages((prev) => [
+        ...prev,
+        { role: "agent", text: "Click the Play button to start this workflow in the Executions page." },
+      ]);
+    }, 500);
   };
 
   return (
@@ -38,51 +72,69 @@ const AgenticOverview = ({ scenario }: AgenticOverviewProps) => {
           <h3 className="text-lg font-semibold">{scenario.name}</h3>
           <p className="text-sm text-muted-foreground">{scenario.description}</p>
         </div>
-        <div className="flex gap-2">
-          <button className="p-2 rounded-lg hover:bg-secondary transition-colors">
-            <Eye className="w-5 h-5 text-muted-foreground" />
-          </button>
-          <button onClick={handlePlay} className="p-2 rounded-lg hover:bg-primary/10 transition-colors">
-            <Play className="w-5 h-5 text-primary" />
-          </button>
-        </div>
+        <button
+          onClick={handlePlay}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity font-medium text-sm"
+        >
+          <Play className="w-4 h-4" />
+          Run
+        </button>
       </div>
 
-      {/* Content: flow + playbook */}
+      {/* Content: chat + playbook */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Agentic Flow - sequential steps */}
-        <div className="lg:col-span-2 bg-card border rounded-lg p-6 shadow-sm">
-          <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-6">Agentic Flow</h4>
+        {/* Chat interface */}
+        <div className="lg:col-span-2 bg-card border rounded-lg shadow-sm flex flex-col min-h-[420px]">
+          <div className="px-4 py-3 border-b">
+            <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Agent Chat</h4>
+          </div>
 
-          <div className="flex flex-col items-center gap-1">
-            {agenticFlowSteps.map((step, i) => (
-              <motion.div key={step.id} className="w-full max-w-md flex flex-col items-center">
-                <motion.div
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.15 + i * 0.1 }}
-                  className="w-full border rounded-lg p-4 bg-card shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
-                      {i + 1}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-foreground text-sm">{step.title}</p>
-                      <p className="text-xs text-muted-foreground">{step.description}</p>
-                    </div>
-                    <Circle className="w-4 h-4 text-muted-foreground/40 flex-shrink-0" />
-                  </div>
-                </motion.div>
-                {i < agenticFlowSteps.length - 1 && (
-                  <ArrowDown className="w-4 h-4 text-muted-foreground/40 my-1" />
-                )}
+          {/* Messages */}
+          <div className="flex-1 p-4 space-y-3 overflow-y-auto max-h-[400px] bg-secondary/10">
+            {messages.map((msg, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.08 }}
+                className={`flex items-start gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
+              >
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  msg.role === "agent" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                }`}>
+                  {msg.role === "agent" ? <Bot className="w-3.5 h-3.5" /> : <User className="w-3.5 h-3.5" />}
+                </div>
+                <div className={`px-3 py-2 rounded-lg max-w-[85%] text-sm whitespace-pre-line ${
+                  msg.role === "agent"
+                    ? "bg-accent text-accent-foreground"
+                    : "bg-primary text-primary-foreground"
+                }`}>
+                  {msg.text}
+                </div>
               </motion.div>
             ))}
+            <div ref={chatEndRef} />
+          </div>
+
+          {/* Input */}
+          <div className="flex items-center gap-2 p-3 border-t bg-card">
+            <input
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSend()}
+              placeholder="Type a message..."
+              className="flex-1 bg-secondary/50 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 ring-primary/30 transition-shadow"
+            />
+            <button
+              onClick={handleSend}
+              className="p-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+            >
+              <Send className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
-        {/* Playbook - tools listing */}
+        {/* Playbook */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -92,7 +144,6 @@ const AgenticOverview = ({ scenario }: AgenticOverviewProps) => {
           <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4 text-center border-b pb-3">
             Playbook – Tools
           </h4>
-
           <div className="space-y-5">
             {defaultPlaybook.map((section) => (
               <div key={section.title}>
